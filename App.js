@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, Animated, FlatList, Vibration, Alert, Button } from 'react-native';
 import {
   TapGestureHandler,
   LongPressGestureHandler,
@@ -8,37 +9,23 @@ import {
   Directions,
   GestureHandlerRootView,
 } from 'react-native-gesture-handler';
-import {
-  NavigationContainer,
-  useNavigation,
-} from '@react-navigation/native';
+import { NavigationContainer, useNavigation } from '@react-navigation/native';  // Додано useNavigation
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Animated,
-  Vibration,
-  Button,
-  Alert,
-  FlatList,
-} from 'react-native';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-
-const Tab = createBottomTabNavigator();
+import { MaterialIcons } from 'react-native-vector-icons';
 
 const tasksList = [
   { id: '1', title: 'Зробити 10 кліків', key: 'clicks10' },
   { id: '2', title: '5 подвійних кліків', key: 'doubleClicks5' },
-  { id: '3', title: 'Зробити довгий натиск', key: 'longPress' },
-  { id: '4', title: 'Перемістити об\'єкт (drag)', key: 'drag' },
-  { id: '5', title: 'Прокачати правий свайп', key: 'swipeRight' },
-  { id: '6', title: 'Прокачати лівий свайп', key: 'swipeLeft' },
-  { id: '7', title: 'Збільшити розмір (pinch)', key: 'pinch' },
-  { id: '8', title: 'Набрати 100 очок', key: 'score100' },
+  { id: '3', title: 'Утримати 3 секунди', key: 'longPress' },
+  { id: '4', title: 'Перетягнути обʼєкт', key: 'drag' },
+  { id: '5', title: 'Свайп вправо', key: 'swipeRight' },
+  { id: '6', title: 'Свайп вліво', key: 'swipeLeft' },
+  { id: '7', title: 'Змінити розмір', key: 'pinch' },
+  { id: '8', title: 'Отримати 100 очок', key: 'score100' },
 ];
 
 function GameScreen() {
+  const navigation = useNavigation();  
   const [score, setScore] = useState(0);
   const [tasks, setTasks] = useState({
     clicks10: 0,
@@ -50,82 +37,96 @@ function GameScreen() {
     pinch: false,
     score100: false,
   });
-  
-  const pulse = useRef(new Animated.Value(1)).current;
+
   const pan = useRef(new Animated.ValueXY()).current;
-  const pinchScale = useRef(new Animated.Value(1)).current;
-  const navigation = useNavigation();
+  const scale = useRef(new Animated.Value(1)).current;
+  const pulse = useRef(new Animated.Value(1)).current;
 
-  const animatePulse = () => {
-    pulse.setValue(1);
-    Animated.sequence([
-      Animated.timing(pulse, { toValue: 1.2, duration: 100, useNativeDriver: true }),
-      Animated.timing(pulse, { toValue: 1, duration: 100, useNativeDriver: true }),
-    ]).start();
-  };
-
-  const updateScore = (points, updateTaskCallback) => {
+  const updateScore = (points) => {
     const newScore = score + points;
-    const updatedTasks = { ...tasks };
-
-    if (newScore >= 100) updatedTasks.score100 = true;
-    if (updateTaskCallback) updateTaskCallback(updatedTasks);
-
+    const newTasks = { ...tasks };
+    if (newScore >= 100) newTasks.score100 = true;
     setScore(newScore);
-    setTasks(updatedTasks);
-    animatePulse();
-    Vibration.vibrate(50);
+    setTasks(newTasks);
   };
 
   const handleTap = () => {
-    updateScore(1, (updatedTasks) => {
-      if (updatedTasks.clicks10 < 10) updatedTasks.clicks10 += 1;
-    });
+    const newTasks = { ...tasks };
+    newTasks.clicks10 += 1;
+    if (newTasks.clicks10 >= 10) newTasks.clicks10 = 10;
+    setTasks(newTasks);
+    animatePulse();
+    updateScore(1);
+    Vibration.vibrate(30);
   };
 
   const handleDoubleTap = () => {
-    updateScore(2, (updatedTasks) => {
-      if (updatedTasks.doubleClicks5 < 5) updatedTasks.doubleClicks5 += 1;
-    });
+    const newTasks = { ...tasks };
+    newTasks.doubleClicks5 += 1;
+    if (newTasks.doubleClicks5 >= 5) newTasks.doubleClicks5 = 5;
+    setTasks(newTasks);
+    animatePulse();
+    updateScore(2);
+    Vibration.vibrate(50);
   };
 
   const handleLongPress = () => {
-    updateScore(5, (updatedTasks) => {
-      updatedTasks.longPress = true;
-    });
+    if (!tasks.longPress) {
+      const newTasks = { ...tasks, longPress: true };
+      setTasks(newTasks);
+      updateScore(5);
+      animatePulse();
+      Vibration.vibrate(200);
+    }
   };
 
   const handleDrag = () => {
-    updateScore(3, (updatedTasks) => {
-      updatedTasks.drag = true;
-    });
+    if (!tasks.drag) {
+      const newTasks = { ...tasks, drag: true };
+      setTasks(newTasks);
+      updateScore(3);
+      animatePulse();
+    }
   };
 
   const handleFling = (direction) => {
-    updateScore(Math.floor(Math.random() * 10) + 1, (updatedTasks) => {
-      if (direction === 'right') {
-        updatedTasks.swipeRight = true;
-        navigation.goBack();
-      } else if (direction === 'left') {
-        updatedTasks.swipeLeft = true;
-        navigation.navigate('NextScreen');
-      }
-    });
+    if (direction === 'right') {
+      navigation.goBack();  // Повернення до попереднього екрану
+    } else if (direction === 'left') {
+      navigation.navigate('NextScreen');  // Переходить на наступний екран
+    }
+
+    const newTasks = { ...tasks };
+    if (direction === 'right') newTasks.swipeRight = true;
+    if (direction === 'left') newTasks.swipeLeft = true;
+    setTasks(newTasks);
+    updateScore(Math.floor(Math.random() * 10) + 1);
+    animatePulse();
   };
 
-  const handlePinch = Animated.event(
-    [{ nativeEvent: { scale: pinchScale } }],
-    {
-      useNativeDriver: true,
-      listener: () => {
-        updateScore(7, (updatedTasks) => {
-          updatedTasks.pinch = true;
-        });
-      },
+  const handlePinch = (event) => {
+    if (!tasks.pinch) {
+      setTasks({ ...tasks, pinch: true });
+      updateScore(7);
     }
-  );
+    scale.setValue(event.nativeEvent.scale);
+  };
 
-  const combinedScale = Animated.multiply(pinchScale, pulse);
+  const animatePulse = () => {
+    pulse.setValue(1);
+    Animated.sequence([ 
+      Animated.timing(pulse, {
+        toValue: 1.2,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(pulse, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   const handleReset = () => {
     Alert.alert(
@@ -154,53 +155,45 @@ function GameScreen() {
   };
 
   return (
-    <FlingGestureHandler
-      direction={Directions.RIGHT}
-      onActivated={() => handleFling('right')}>
+    <GestureHandlerRootView style={styles.container}>
+      <Text style={styles.score}>Очки: {score}</Text>
+      <Button title="Скинути прогрес" onPress={handleReset} />
       <FlingGestureHandler
-        direction={Directions.LEFT}
-        onActivated={() => handleFling('left')}>
-        <View style={styles.container}>
-          <Text style={{ fontSize: 28, textAlign: 'center' }}>Очки: {score}</Text>
-          <Text style={{ textAlign: 'center', marginBottom: 10 }}>Завдань виконано: {
-            Object.values(tasks).filter(val => val === true || typeof val === 'number' && val > 0).length
-          } / 8</Text>
-
-          <LongPressGestureHandler onActivated={handleLongPress} minDurationMs={3000}>
-            <TapGestureHandler onActivated={handleDoubleTap} numberOfTaps={2}>
-              <TapGestureHandler onActivated={handleTap}>
-                <PinchGestureHandler onGestureEvent={handlePinch}>
-                  <PanGestureHandler
-                    onGestureEvent={Animated.event(
-                      [{ nativeEvent: { translationX: pan.x, translationY: pan.y } }],
-                      { useNativeDriver: false, listener: handleDrag }
-                    )}
-                  >
+        direction={Directions.RIGHT}
+        onActivated={() => handleFling('right')}>
+        <FlingGestureHandler
+          direction={Directions.LEFT}
+          onActivated={() => handleFling('left')}>
+          <PinchGestureHandler onGestureEvent={handlePinch}>
+            <PanGestureHandler
+              onGestureEvent={Animated.event(
+                [{ nativeEvent: { translationX: pan.x, translationY: pan.y } }],
+                { useNativeDriver: false, listener: handleDrag }
+              )}>
+              <LongPressGestureHandler
+                onActivated={handleLongPress}
+                minDurationMs={3000}>
+                <TapGestureHandler
+                  onActivated={handleDoubleTap}
+                  numberOfTaps={2}>
+                  <TapGestureHandler onActivated={handleTap}>
                     <Animated.View
-                      style={{
-                        width: 100,
-                        height: 100,
-                        borderRadius: 50,
-                        backgroundColor: '#007aff',
-                        alignSelf: 'center',
-                        marginTop: 40,
+                      style={[styles.circle, {
                         transform: [
                           { translateX: pan.x },
                           { translateY: pan.y },
-                          { scale: combinedScale },
+                          { scale: Animated.multiply(scale, pulse) },
                         ],
-                      }}
+                      }]}
                     />
-                  </PanGestureHandler>
-                </PinchGestureHandler>
-              </TapGestureHandler>
-            </TapGestureHandler>
-          </LongPressGestureHandler>
-
-          <Button title="Скинути прогрес" onPress={handleReset} />
-        </View>
+                  </TapGestureHandler>
+                </TapGestureHandler>
+              </LongPressGestureHandler>
+            </PanGestureHandler>
+          </PinchGestureHandler>
+        </FlingGestureHandler>
       </FlingGestureHandler>
-    </FlingGestureHandler>
+    </GestureHandlerRootView>
   );
 }
 
@@ -212,11 +205,11 @@ function TasksScreen() {
       clicks10: true,
       doubleClicks5: true,
       longPress: true,
-      drag: false,
-      swipeRight: false,
-      swipeLeft: false,
-      pinch: false,
-      score100: false,
+      drag: true,
+      swipeRight: true,
+      swipeLeft: true,
+      pinch: true,
+      score100: true,
     });
   }, []);
 
@@ -229,52 +222,33 @@ function TasksScreen() {
 
   return (
     <View style={styles.container}>
-      <FlatList data={tasksList} renderItem={renderItem} keyExtractor={item => item.id} />
+      <FlatList
+        data={tasksList}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+      />
     </View>
   );
 }
 
-function NextScreen() {
-  return (
-    <View style={styles.container}>
-      <Text style={{ fontSize: 24 }}>Наступний екран 🚀</Text>
-    </View>
-  );
+const Tab = createBottomTabNavigator();
+
+function HomeScreen() {
+  useEffect(() => {
+    Alert.alert('Ласкаво просимо!', 'Це гра-клікер з жестами. Натискай, утримуй, свайпай і масштабуй коло, щоб заробити очки і виконати завдання!');
+  }, []);
+
+  return <GameScreen />;
 }
 
 export default function App() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <NavigationContainer>
-        <Tab.Navigator screenOptions={{ headerShown: false }}>
-          <Tab.Screen
-            name="Гра"
-            component={GameScreen}
-            options={{
-              tabBarIcon: ({ color, size }) => (
-                <MaterialIcons name="sports-esports" size={size} color={color} />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="Завдання"
-            component={TasksScreen}
-            options={{
-              tabBarIcon: ({ color, size }) => (
-                <MaterialIcons name="checklist" size={size} color={color} />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="NextScreen"
-            component={NextScreen}
-            options={{
-              tabBarButton: () => null, 
-            }}
-          />
-        </Tab.Navigator>
-      </NavigationContainer>
-    </GestureHandlerRootView>
+    <NavigationContainer>
+      <Tab.Navigator screenOptions={{ headerShown: false }}>
+        <Tab.Screen name="Гра" component={HomeScreen} options={{ tabBarIcon: ({ color, size }) => (<MaterialIcons name="sports-esports" size={size} color={color} />) }} />
+        <Tab.Screen name="Завдання" component={TasksScreen} options={{ tabBarIcon: ({ color, size }) => (<MaterialIcons name="list" size={size} color={color} />) }} />
+      </Tab.Navigator>
+    </NavigationContainer>
   );
 }
 
@@ -285,11 +259,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     backgroundColor: '#f0f4f7',
   },
+  score: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  circle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#007aff',
+    alignSelf: 'center',
+  },
   taskItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    padding: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
+    borderBottomColor: '#ccc',
   },
 });
