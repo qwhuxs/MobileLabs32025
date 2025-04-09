@@ -4,6 +4,7 @@ import {
   LongPressGestureHandler,
   PanGestureHandler,
   FlingGestureHandler,
+  PinchGestureHandler,
   Directions,
   GestureHandlerRootView,
 } from 'react-native-gesture-handler';
@@ -23,11 +24,11 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 const Tab = createBottomTabNavigator();
 
-// GameScreen з усіма жестами + fling
 function GameScreen() {
   const [score, setScore] = useState(0);
   const pulse = useRef(new Animated.Value(1)).current;
   const pan = useRef(new Animated.ValueXY()).current;
+  const pinchScale = useRef(new Animated.Value(1)).current;
   const navigation = useNavigation();
 
   const animatePulse = () => {
@@ -71,6 +72,20 @@ function GameScreen() {
     Vibration.vibrate(60);
   };
 
+  const handlePinch = Animated.event(
+    [{ nativeEvent: { scale: pinchScale } }],
+    {
+      useNativeDriver: true,
+      listener: () => {
+        setScore(prev => prev + 7);
+        animatePulse();
+        Vibration.vibrate(70);
+      },
+    }
+  );
+
+  const combinedScale = Animated.multiply(pinchScale, pulse);
+
   return (
     <FlingGestureHandler
       direction={Directions.RIGHT}
@@ -83,28 +98,30 @@ function GameScreen() {
           <LongPressGestureHandler onActivated={handleLongPress} minDurationMs={3000}>
             <TapGestureHandler onActivated={handleDoubleTap} numberOfTaps={2}>
               <TapGestureHandler onActivated={handleTap}>
-                <PanGestureHandler
-                  onGestureEvent={Animated.event(
-                    [{ nativeEvent: { translationX: pan.x, translationY: pan.y } }],
-                    { useNativeDriver: false, listener: handleDrag }
-                  )}
-                >
-                  <Animated.View
-                    style={{
-                      width: 100,
-                      height: 100,
-                      borderRadius: 50,
-                      backgroundColor: '#007aff',
-                      alignSelf: 'center',
-                      marginTop: 40,
-                      transform: [
-                        { translateX: pan.x },
-                        { translateY: pan.y },
-                        { scale: pulse },
-                      ],
-                    }}
-                  />
-                </PanGestureHandler>
+                <PinchGestureHandler onGestureEvent={handlePinch}>
+                  <PanGestureHandler
+                    onGestureEvent={Animated.event(
+                      [{ nativeEvent: { translationX: pan.x, translationY: pan.y } }],
+                      { useNativeDriver: false, listener: handleDrag }
+                    )}
+                  >
+                    <Animated.View
+                      style={{
+                        width: 100,
+                        height: 100,
+                        borderRadius: 50,
+                        backgroundColor: '#007aff',
+                        alignSelf: 'center',
+                        marginTop: 40,
+                        transform: [
+                          { translateX: pan.x },
+                          { translateY: pan.y },
+                          { scale: combinedScale },
+                        ],
+                      }}
+                    />
+                  </PanGestureHandler>
+                </PinchGestureHandler>
               </TapGestureHandler>
             </TapGestureHandler>
           </LongPressGestureHandler>
@@ -122,7 +139,6 @@ function TasksScreen() {
   );
 }
 
-// Заглушка для переходу при swipe left
 function NextScreen() {
   return (
     <View style={styles.container}>
