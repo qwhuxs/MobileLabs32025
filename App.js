@@ -3,10 +3,13 @@ import {
   TapGestureHandler,
   LongPressGestureHandler,
   PanGestureHandler,
+  FlingGestureHandler,
+  Directions,
   GestureHandlerRootView,
 } from 'react-native-gesture-handler';
 import {
-  NavigationContainer
+  NavigationContainer,
+  useNavigation,
 } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import {
@@ -20,11 +23,12 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 const Tab = createBottomTabNavigator();
 
-// GameScreen з усіма жестами
+// GameScreen з усіма жестами + fling
 function GameScreen() {
   const [score, setScore] = useState(0);
   const pulse = useRef(new Animated.Value(1)).current;
   const pan = useRef(new Animated.ValueXY()).current;
+  const navigation = useNavigation();
 
   const animatePulse = () => {
     pulse.setValue(1);
@@ -58,38 +62,55 @@ function GameScreen() {
     Vibration.vibrate(40);
   };
 
+  const handleFling = (direction) => {
+    if (direction === 'right') navigation.goBack();
+    else if (direction === 'left') navigation.navigate('NextScreen');
+
+    setScore(prev => prev + Math.floor(Math.random() * 10) + 1);
+    animatePulse();
+    Vibration.vibrate(60);
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={{ fontSize: 28, textAlign: 'center' }}>Очки: {score}</Text>
-      <LongPressGestureHandler onActivated={handleLongPress} minDurationMs={3000}>
-        <TapGestureHandler onActivated={handleDoubleTap} numberOfTaps={2}>
-          <TapGestureHandler onActivated={handleTap}>
-            <PanGestureHandler
-              onGestureEvent={Animated.event(
-                [{ nativeEvent: { translationX: pan.x, translationY: pan.y } }],
-                { useNativeDriver: false, listener: handleDrag }
-              )}
-            >
-              <Animated.View
-                style={{
-                  width: 100,
-                  height: 100,
-                  borderRadius: 50,
-                  backgroundColor: '#007aff',
-                  alignSelf: 'center',
-                  marginTop: 40,
-                  transform: [
-                    { translateX: pan.x },
-                    { translateY: pan.y },
-                    { scale: pulse },
-                  ],
-                }}
-              />
-            </PanGestureHandler>
-          </TapGestureHandler>
-        </TapGestureHandler>
-      </LongPressGestureHandler>
-    </View>
+    <FlingGestureHandler
+      direction={Directions.RIGHT}
+      onActivated={() => handleFling('right')}>
+      <FlingGestureHandler
+        direction={Directions.LEFT}
+        onActivated={() => handleFling('left')}>
+        <View style={styles.container}>
+          <Text style={{ fontSize: 28, textAlign: 'center' }}>Очки: {score}</Text>
+          <LongPressGestureHandler onActivated={handleLongPress} minDurationMs={3000}>
+            <TapGestureHandler onActivated={handleDoubleTap} numberOfTaps={2}>
+              <TapGestureHandler onActivated={handleTap}>
+                <PanGestureHandler
+                  onGestureEvent={Animated.event(
+                    [{ nativeEvent: { translationX: pan.x, translationY: pan.y } }],
+                    { useNativeDriver: false, listener: handleDrag }
+                  )}
+                >
+                  <Animated.View
+                    style={{
+                      width: 100,
+                      height: 100,
+                      borderRadius: 50,
+                      backgroundColor: '#007aff',
+                      alignSelf: 'center',
+                      marginTop: 40,
+                      transform: [
+                        { translateX: pan.x },
+                        { translateY: pan.y },
+                        { scale: pulse },
+                      ],
+                    }}
+                  />
+                </PanGestureHandler>
+              </TapGestureHandler>
+            </TapGestureHandler>
+          </LongPressGestureHandler>
+        </View>
+      </FlingGestureHandler>
+    </FlingGestureHandler>
   );
 }
 
@@ -97,6 +118,15 @@ function TasksScreen() {
   return (
     <View style={styles.container}>
       <Text>Завдання</Text>
+    </View>
+  );
+}
+
+// Заглушка для переходу при swipe left
+function NextScreen() {
+  return (
+    <View style={styles.container}>
+      <Text style={{ fontSize: 24 }}>Наступний екран 🚀</Text>
     </View>
   );
 }
@@ -122,6 +152,13 @@ export default function App() {
               tabBarIcon: ({ color, size }) => (
                 <MaterialIcons name="checklist" size={size} color={color} />
               ),
+            }}
+          />
+          <Tab.Screen
+            name="NextScreen"
+            component={NextScreen}
+            options={{
+              tabBarButton: () => null, // приховуємо з таб-бару
             }}
           />
         </Tab.Navigator>
