@@ -19,6 +19,8 @@ import {
   StyleSheet,
   Animated,
   Vibration,
+  Button,
+  Alert,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
@@ -113,6 +115,32 @@ function GameScreen() {
 
   const combinedScale = Animated.multiply(pinchScale, pulse);
 
+  const handleReset = () => {
+    Alert.alert(
+      'Скинути прогрес',
+      'Ти впевнена, що хочеш скинути всі результати?',
+      [
+        { text: 'Скасувати', style: 'cancel' },
+        {
+          text: 'Так',
+          onPress: () => {
+            setScore(0);
+            setTasks({
+              clicks10: 0,
+              doubleClicks5: 0,
+              longPress: false,
+              drag: false,
+              swipeRight: false,
+              swipeLeft: false,
+              pinch: false,
+              score100: false,
+            });
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <FlingGestureHandler
       direction={Directions.RIGHT}
@@ -156,6 +184,8 @@ function GameScreen() {
               </TapGestureHandler>
             </TapGestureHandler>
           </LongPressGestureHandler>
+
+          <Button title="Скинути прогрес" onPress={handleReset} />
         </View>
       </FlingGestureHandler>
     </FlingGestureHandler>
