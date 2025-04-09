@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import {
   TapGestureHandler,
   LongPressGestureHandler,
+  PanGestureHandler,
   GestureHandlerRootView,
 } from 'react-native-gesture-handler';
 import {
@@ -19,10 +20,11 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 const Tab = createBottomTabNavigator();
 
-// GameScreen з tap, double tap, long press
+// GameScreen з усіма жестами
 function GameScreen() {
   const [score, setScore] = useState(0);
   const pulse = useRef(new Animated.Value(1)).current;
+  const pan = useRef(new Animated.ValueXY()).current;
 
   const animatePulse = () => {
     pulse.setValue(1);
@@ -50,23 +52,40 @@ function GameScreen() {
     Vibration.vibrate(200);
   };
 
+  const handleDrag = () => {
+    setScore(prev => prev + 3);
+    animatePulse();
+    Vibration.vibrate(40);
+  };
+
   return (
     <View style={styles.container}>
       <Text style={{ fontSize: 28, textAlign: 'center' }}>Очки: {score}</Text>
       <LongPressGestureHandler onActivated={handleLongPress} minDurationMs={3000}>
         <TapGestureHandler onActivated={handleDoubleTap} numberOfTaps={2}>
           <TapGestureHandler onActivated={handleTap}>
-            <Animated.View
-              style={{
-                width: 100,
-                height: 100,
-                borderRadius: 50,
-                backgroundColor: '#007aff',
-                alignSelf: 'center',
-                marginTop: 40,
-                transform: [{ scale: pulse }],
-              }}
-            />
+            <PanGestureHandler
+              onGestureEvent={Animated.event(
+                [{ nativeEvent: { translationX: pan.x, translationY: pan.y } }],
+                { useNativeDriver: false, listener: handleDrag }
+              )}
+            >
+              <Animated.View
+                style={{
+                  width: 100,
+                  height: 100,
+                  borderRadius: 50,
+                  backgroundColor: '#007aff',
+                  alignSelf: 'center',
+                  marginTop: 40,
+                  transform: [
+                    { translateX: pan.x },
+                    { translateY: pan.y },
+                    { scale: pulse },
+                  ],
+                }}
+              />
+            </PanGestureHandler>
           </TapGestureHandler>
         </TapGestureHandler>
       </LongPressGestureHandler>
