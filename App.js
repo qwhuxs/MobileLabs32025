@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   TapGestureHandler,
   LongPressGestureHandler,
@@ -21,10 +21,22 @@ import {
   Vibration,
   Button,
   Alert,
+  FlatList,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 const Tab = createBottomTabNavigator();
+
+const tasksList = [
+  { id: '1', title: 'Зробити 10 кліків', key: 'clicks10' },
+  { id: '2', title: '5 подвійних кліків', key: 'doubleClicks5' },
+  { id: '3', title: 'Зробити довгий натиск', key: 'longPress' },
+  { id: '4', title: 'Перемістити об\'єкт (drag)', key: 'drag' },
+  { id: '5', title: 'Прокачати правий свайп', key: 'swipeRight' },
+  { id: '6', title: 'Прокачати лівий свайп', key: 'swipeLeft' },
+  { id: '7', title: 'Збільшити розмір (pinch)', key: 'pinch' },
+  { id: '8', title: 'Набрати 100 очок', key: 'score100' },
+];
 
 function GameScreen() {
   const [score, setScore] = useState(0);
@@ -193,9 +205,31 @@ function GameScreen() {
 }
 
 function TasksScreen() {
+  const [completedTasks, setCompletedTasks] = useState({});
+
+  useEffect(() => {
+    setCompletedTasks({
+      clicks10: true,
+      doubleClicks5: true,
+      longPress: true,
+      drag: false,
+      swipeRight: false,
+      swipeLeft: false,
+      pinch: false,
+      score100: false,
+    });
+  }, []);
+
+  const renderItem = ({ item }) => (
+    <View style={styles.taskItem}>
+      <Text style={{ flex: 1 }}>{item.title}</Text>
+      {completedTasks[item.key] && <MaterialIcons name="check-circle" size={24} color="green" />}
+    </View>
+  );
+
   return (
     <View style={styles.container}>
-      <Text>Завдання</Text>
+      <FlatList data={tasksList} renderItem={renderItem} keyExtractor={item => item.id} />
     </View>
   );
 }
@@ -250,5 +284,12 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: 20,
     backgroundColor: '#f0f4f7',
+  },
+  taskItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
   },
 });
